@@ -3,7 +3,6 @@ import requests
 
 NEWS_API_URL = "https://newsapi.org/v2/everything"
 
-
 def get_news(topic):
     """Fetch up to five recent articles for a topic from NewsAPI."""
     try:
