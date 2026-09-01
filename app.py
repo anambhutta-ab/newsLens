@@ -6,11 +6,8 @@ from sources import SOURCES
 
 st.set_page_config(page_title="NewsLens", page_icon="📰", layout="centered")
 
-GEMINI_MODEL = "gemini-3.7-flash"
-GEMINI_URL = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/"
-    f"{GEMINI_MODEL}:generateContent"
-)
+GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 LEVEL_INSTRUCTIONS = {
     "Beginner": (
@@ -70,30 +67,31 @@ Articles:
 """
 
 
-def get_gemini_response(prompt):
+def get_groq_response(prompt):
     try:
-        gemini_api_key = st.secrets["GEMINI_API_KEY"]
+        groq_api_key = st.secrets["GROQ_API_KEY"]
     except (KeyError, FileNotFoundError):
-        return None, "GEMINI_API_KEY is missing. Add it to Streamlit secrets."
+        return None, "GROQ_API_KEY is missing. Add it to Streamlit secrets."
 
     headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": gemini_api_key,
+        "Authorization": f"Bearer {groq_api_key}",
     }
 
     payload = {
-        "contents": [
+        "model": GROQ_MODEL,
+        "messages": [
             {
-                "parts": [
-                    {"text": prompt}
-                ]
+                "role": "user",
+                "content": prompt,
             }
-        ]
+        ],
+        "temperature": 0.3,
     }
 
     try:
         response = requests.post(
-            GEMINI_URL,
+            GROQ_URL,
             headers=headers,
             json=payload,
             timeout=45,
@@ -101,20 +99,20 @@ def get_gemini_response(prompt):
         data = response.json()
 
         if response.status_code != 200:
-            error = data.get("error", {}).get("message", "Gemini request failed.")
+            error = data.get("error", {}).get("message", "Groq request failed.")
             return None, error
 
-        candidates = data.get("candidates", [])
-        if not candidates:
-            return None, "Gemini did not return a response."
+        choices = data.get("choices", [])
+        if not choices:
+            return None, "Groq did not return a response."
 
-        text = candidates[0]["content"]["parts"][0]["text"]
+        text = choices[0]["message"]["content"]
         return text, None
 
     except requests.RequestException:
-        return None, "Could not connect to Gemini. Please try again."
+        return None, "Could not connect to Groq. Please try again."
     except (ValueError, KeyError, IndexError):
-        return None, "Gemini returned an unexpected response."
+        return None, "Groq returned an unexpected response."
 
 
 st.title("NewsLens")
@@ -149,10 +147,10 @@ if st.button("Analyze news", type="primary"):
     prompt = build_prompt(topic.strip(), level, articles)
 
     with st.spinner("Creating your news explanation..."):
-        summary, error = get_gemini_response(prompt)
+        summary, error = get_groq_response(prompt)
 
     if error:
-        st.error(f"Gemini error: {error}")
+        st.error(f"Groq error: {error}")
         st.stop()
 
     st.markdown(summary)
