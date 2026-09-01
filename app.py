@@ -6,7 +6,7 @@ from sources import SOURCES
 
 st.set_page_config(page_title="NewsLens", page_icon="📰", layout="centered")
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 LEVEL_INSTRUCTIONS = {
